@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServicingAI — Covenant Monitoring</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root { color-scheme: light; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #f8f7f5; color: #1a1a1a; line-height: 1.5; }
+
+/* ===== SCREEN SYSTEM ===== */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ===== UPLOAD SCREEN ===== */
+.upload-screen { display: none; align-items: center; justify-content: center; background: #f8f7f5; padding: 40px; }
+.upload-screen.active { display: flex; }
+.upload-container { max-width: 580px; width: 100%; text-align: center; }
+.upload-container h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+.upload-container p.sub { font-size: 14px; color: #888; margin-bottom: 32px; }
+.drop-zone { border: 2px dashed #d3d1c7; border-radius: 16px; padding: 60px 40px; background: #fff; cursor: pointer; transition: all 0.2s; }
+.drop-zone:hover, .drop-zone.dragover { border-color: #534AB7; background: #faf9ff; }
+.drop-zone .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.drop-zone .cta { font-size: 14px; font-weight: 500; color: #534AB7; margin-bottom: 4px; }
+.drop-zone .hint { font-size: 12px; color: #aaa; }
+.upload-footer { margin-top: 24px; font-size: 12px; color: #bbb; }
+.upload-footer a { color: #534AB7; text-decoration: none; cursor: pointer; }
+
+/* ===== EXTRACTION SCREEN ===== */
+.extract-screen { display: none; align-items: center; justify-content: center; background: #f8f7f5; padding: 40px; }
+.extract-screen.active { display: flex; }
+.extract-container { max-width: 520px; width: 100%; text-align: center; }
+.extract-container h2 { font-size: 18px; font-weight: 600; margin-bottom: 24px; }
+.extract-file { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 0.5px solid #e5e3de; border-radius: 8px; padding: 10px 16px; font-size: 13px; margin-bottom: 32px; }
+.extract-file .file-icon { font-size: 18px; }
+.extract-progress { margin-bottom: 32px; }
+.extract-bar { height: 4px; background: #eee; border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+.extract-bar-fill { height: 100%; background: linear-gradient(90deg, #534AB7, #7C6FEB); border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+.extract-steps { text-align: left; }
+.extract-step { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; color: #bbb; transition: color 0.3s; }
+.extract-step.active { color: #1a1a1a; }
+.extract-step.done { color: #0F6E56; }
+.extract-step .step-icon { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; transition: all 0.3s; }
+.extract-step.active .step-icon { border-color: #534AB7; background: #534AB7; color: #fff; animation: spin 1s linear infinite; }
+.extract-step.done .step-icon { border-color: #5DCAA5; background: #5DCAA5; color: #fff; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* ===== REVIEW SCREEN ===== */
+.review-screen { display: none; background: #f8f7f5; padding: 24px 40px; }
+.review-screen.active { display: block; }
+.review-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+.review-header h2 { font-size: 18px; font-weight: 600; }
+.review-header .review-meta { font-size: 12px; color: #888; }
+.review-banner { background: #EEEDFE; border: 0.5px solid #C5C2F0; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; font-size: 13px; color: #534AB7; display: flex; align-items: center; gap: 8px; }
+.review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.review-card { background: #fff; border: 0.5px solid #e5e3de; border-radius: 10px; padding: 16px; }
+.review-card h3 { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.review-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid #f1efe8; font-size: 13px; }
+.review-row:last-child { border: none; }
+.review-row .rv-label { color: #666; }
+.review-row .rv-val { font-weight: 500; font-variant-numeric: tabular-nums; }
+.review-row .rv-val.changed { color: #534AB7; background: #EEEDFE; padding: 1px 6px; border-radius: 3px; }
+.review-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.btn { padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+.btn-primary { background: #1a1a1a; color: #fff; }
+.btn-primary:hover { background: #333; }
+.btn-secondary { background: #fff; color: #666; border: 0.5px solid #d3d1c7; }
+.btn-secondary:hover { background: #f5f5f3; }
+.btn-purple { background: #534AB7; color: #fff; }
+.btn-purple:hover { background: #4239A0; }
+
+/* ===== DASHBOARD SCREEN ===== */
+.dash-screen { display: none; padding: 20px; }
+.dash-screen.active { display: block; }
+
+.top-bar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.top-bar h1 { font-size: 18px; font-weight: 600; }
+.top-bar .meta { font-size: 12px; color: #888; }
+.top-bar .meta span { margin-left: 12px; }
+
+/* Document version card */
+.doc-version-bar { background: #fff; border: 0.5px solid #e5e3de; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.doc-version-bar .dv-left { display: flex; align-items: center; gap: 12px; }
+.doc-version-bar .dv-icon { width: 36px; height: 36px; border-radius: 8px; background: #EEEDFE; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.doc-version-bar .dv-info .dv-name { font-size: 13px; font-weight: 500; }
+.doc-version-bar .dv-info .dv-meta { font-size: 11px; color: #999; }
+.doc-version-bar .dv-right { display: flex; align-items: center; gap: 8px; }
+.version-pill { font-size: 10px; font-weight: 600; background: #E1F5EE; color: #0F6E56; padding: 2px 8px; border-radius: 10px; }
+.btn-sm { padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; border: 0.5px solid #d3d1c7; background: #fff; color: #666; }
+.btn-sm:hover { background: #f5f5f3; }
+
+/* Diff panel */
+.diff-panel { display: none; background: #fff; border: 0.5px solid #e5e3de; border-radius: 10px; margin-bottom: 16px; overflow: hidden; }
+.diff-panel.open { display: block; }
+.diff-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 0.5px solid #e5e3de; background: #fafaf8; }
+.diff-header h3 { font-size: 13px; font-weight: 600; }
+.diff-header .diff-close { cursor: pointer; font-size: 18px; color: #999; border: none; background: none; }
+.diff-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.diff-table th { text-align: left; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #999; font-weight: 600; background: #fafaf8; border-bottom: 0.5px solid #e5e3de; }
+.diff-table td { padding: 7px 12px; border-bottom: 0.5px solid #f1efe8; }
+.diff-table tr:last-child td { border: none; }
+.diff-old { color: #A32D2D; background: #FFF5F5; text-decoration: line-through; }
+.diff-new { color: #0F6E56; background: #F0FBF6; font-weight: 500; }
+.diff-unchanged { color: #999; }
+.diff-tag { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; }
+.diff-tag.added { background: #E1F5EE; color: #0F6E56; }
+.diff-tag.changed { background: #EEEDFE; color: #534AB7; }
+.diff-tag.removed { background: #FDECEC; color: #A32D2D; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+.kpi { background: #fff; border: 0.5px solid #e5e3de; border-radius: 10px; padding: 12px 14px; position: relative; overflow: hidden; }
+.kpi .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #999; margin-bottom: 2px; }
+.kpi .kpi-val { font-size: 22px; font-weight: 600; }
+.kpi .kpi-sub { font-size: 11px; color: #999; margin-top: 1px; }
+.kpi .kpi-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; }
+.kpi.ok .kpi-val { color: #0F6E56; }
+.kpi.ok .kpi-bar { background: #5DCAA5; }
+.kpi.warn .kpi-val { color: #854F0B; }
+.kpi.warn .kpi-bar { background: #FAC775; }
+.kpi.crit .kpi-val { color: #A32D2D; }
+.kpi.crit .kpi-bar { background: #F09595; }
+
+/* Alert cards */
+.alert-section { margin-bottom: 24px; }
+.alert-header { font-size: 13px; font-weight: 600; color: #A32D2D; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.alert-header .dot { width: 8px; height: 8px; border-radius: 50%; background: #E24B4A; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.alert-card { background: #fff; border: 0.5px solid #F09595; border-left: 4px solid #E24B4A; border-radius: 8px; padding: 12px 14px; margin-bottom: 6px; }
+.alert-card-top { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
+.alert-card .a-name { font-size: 13px; font-weight: 500; }
+.alert-card .a-detail { font-size: 12px; color: #666; margin-top: 2px; }
+.alert-card .a-val { text-align: right; }
+.alert-card .a-val .num { font-size: 16px; font-weight: 600; color: #A32D2D; }
+.alert-card .a-val .thr { font-size: 11px; color: #999; }
+.alert-card-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid #F9E0E0; }
+.outreach-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+.outreach-btn.primary { background: #A32D2D; color: #fff; }
+.outreach-btn.primary:hover { background: #8B2323; }
+.outreach-btn.secondary { background: #fff; color: #A32D2D; border: 0.5px solid #F09595; }
+.outreach-btn.secondary:hover { background: #FFF5F5; }
+.outreach-btn svg { width: 14px; height: 14px; }
+
+/* Watch cards */
+.warn-card { background: #fff; border: 0.5px solid #FAC775; border-left: 4px solid #EF9F27; border-radius: 8px; padding: 12px 14px; margin-bottom: 6px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
+.warn-card .a-name { font-size: 13px; font-weight: 500; }
+.warn-card .a-detail { font-size: 12px; color: #666; margin-top: 2px; }
+.warn-card .a-val { text-align: right; }
+.warn-card .a-val .num { font-size: 16px; font-weight: 600; color: #854F0B; }
+.warn-card .a-val .thr { font-size: 11px; color: #999; }
+.warn-header { font-size: 13px; font-weight: 600; color: #854F0B; margin: 16px 0 8px; display: flex; align-items: center; gap: 6px; }
+
+/* Charts */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.chart-card { background: #fff; border: 0.5px solid #e5e3de; border-radius: 10px; padding: 14px; }
+.chart-card h3 { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+
+/* Timeline */
+.section-label { font-size: 13px; font-weight: 600; color: #1a1a1a; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid #e5e3de; display: flex; align-items: center; gap: 8px; }
+.section-label .badge { font-size: 10px; background: #f1efe8; color: #888; border-radius: 10px; padding: 1px 8px; font-weight: 500; }
+.timeline-row { display: flex; gap: 3px; margin-bottom: 16px; }
+.tl-block { flex: 1; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: #fff; }
+.tl-block.g { background: #5DCAA5; }
+.tl-block.y { background: #FAC775; color: #854F0B; }
+.tl-block.r { background: #F09595; color: #791F1F; }
+.tl-labels { display: flex; gap: 3px; margin-bottom: 4px; }
+.tl-labels span { flex: 1; text-align: center; font-size: 9px; color: #aaa; }
+
+/* Tabs & table */
+.cat-pill { display: inline-block; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; padding: 1px 6px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
+.cat-pill.m { background: #EEEDFE; color: #534AB7; }
+.cat-pill.e { background: #FAECE7; color: #D85A30; }
+.cat-pill.t { background: #E1F5EE; color: #1D9E75; }
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.tab { padding: 5px 12px; border-radius: 16px; border: 0.5px solid #d3d1c7; background: #fff; font-size: 12px; cursor: pointer; color: #666; }
+.tab:hover { background: #f0efe8; }
+.tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+table.items { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; border: 0.5px solid #e5e3de; border-radius: 8px; overflow: hidden; }
+table.items thead th { text-align: left; padding: 8px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #999; font-weight: 600; background: #fafaf8; border-bottom: 0.5px solid #e5e3de; }
+table.items tbody td { padding: 7px 10px; border-bottom: 0.5px solid #f1efe8; vertical-align: top; }
+table.items tbody tr:last-child td { border-bottom: none; }
+table.items tbody tr:hover { background: #fafaf8; }
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.status-dot.ok { background: #5DCAA5; }
+.status-dot.warn { background: #FAC775; }
+.status-dot.crit { background: #E24B4A; }
+.status-dot.pending { background: #d3d1c7; }
+.status-dot.na { background: #e5e3de; }
+.val-cell { font-weight: 500; font-variant-numeric: tabular-nums; }
+.thr-cell { color: #999; }
+.ref-cell { color: #bbb; font-size: 11px; }
+.date-cell { color: #999; font-size: 11px; }
+.note-cell { color: #666; font-size: 11px; font-style: italic; max-width: 180px; }
+
+.sweep-banner { background: #FAEEDA; border: 0.5px solid #FAC775; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #854F0B; display: flex; align-items: center; gap: 8px; }
+.sweep-banner strong { font-weight: 600; }
+
+/* Email modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 12px; width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 0.5px solid #e5e3de; }
+.modal-header h3 { font-size: 15px; font-weight: 600; }
+.modal-close { cursor: pointer; font-size: 20px; color: #999; border: none; background: none; padding: 0 4px; }
+.modal-body { padding: 20px; }
+.modal-field { margin-bottom: 14px; }
+.modal-field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #999; margin-bottom: 4px; }
+.modal-field input, .modal-field textarea { width: 100%; padding: 8px 12px; border: 0.5px solid #d3d1c7; border-radius: 6px; font-size: 13px; font-family: inherit; }
+.modal-field textarea { height: 180px; resize: vertical; line-height: 1.6; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; padding: 16px 20px; border-top: 0.5px solid #e5e3de; }
+.generated-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #534AB7; background: #EEEDFE; padding: 2px 8px; border-radius: 10px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ===== SCREEN 1: UPLOAD ===== -->
+<div class="upload-screen active" id="uploadScreen">
+  <div class="upload-container">
+    <h1>Covenant monitoring</h1>
+    <p class="sub">Upload a loan closing document to extract covenants, thresholds, and monitoring benchmarks.</p>
+    <div class="drop-zone" id="dropZone">
+      <div class="icon">📄</div>
+      <div class="cta">Drop a loan closing document here, or click to browse</div>
+      <div class="hint">PDF up to 200 pages &middot; We'll extract everything automatically</div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf" style="display:none">
+    <div class="upload-footer">
+      <a id="useDemoLink">Use demo document</a> to see a pre-populated example (Meridian Crossings)
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 2: EXTRACTION ===== -->
+<div class="extract-screen" id="extractScreen">
+  <div class="extract-container">
+    <h2>Reading your document</h2>
+    <div class="extract-file">
+      <span class="file-icon">📄</span>
+      <span id="extractFileName">Commercial_Loan_Agreement_Meridian_Crossings.pdf</span>
+      <span style="color:#999; font-size:11px" id="extractFileSize">2.4 MB</span>
+    </div>
+    <div class="extract-progress">
+      <div class="extract-bar"><div class="extract-bar-fill" id="extractBarFill"></div></div>
+      <div class="extract-steps">
+        <div class="extract-step" id="step1"><div class="step-icon">⟳</div> Parsing document structure</div>
+        <div class="extract-step" id="step2"><div class="step-icon">⟳</div> Identifying covenant sections</div>
+        <div class="extract-step" id="step3"><div class="step-icon">⟳</div> Extracting thresholds and benchmarks</div>
+        <div class="extract-step" id="step4"><div class="step-icon">⟳</div> Mapping triggers and events</div>
+        <div class="extract-step" id="step5"><div class="step-icon">⟳</div> Building monitoring rules</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 3: REVIEW ===== -->
+<div class="review-screen" id="reviewScreen">
+  <div class="review-header">
+    <h2>Review extracted covenants</h2>
+    <div class="review-meta">64 monitorable items extracted from 32 pages</div>
+  </div>
+  <div class="review-banner">
+    ✨ AI extracted the values below from your loan closing document. Review and confirm before populating the monitoring dashboard.
+  </div>
+  <div class="review-grid">
+    <div class="review-card">
+      <h3>Loan details</h3>
+      <div class="review-row"><span class="rv-label">Loan number</span><span class="rv-val">GNB-2026-04281</span></div>
+      <div class="review-row"><span class="rv-label">Property</span><span class="rv-val">Meridian Crossings</span></div>
+      <div class="review-row"><span class="rv-label">Address</span><span class="rv-val">8400 Meridian Blvd, Scottsdale, AZ</span></div>
+      <div class="review-row"><span class="rv-label">Loan amount</span><span class="rv-val">$42,000,000</span></div>
+      <div class="review-row"><span class="rv-label">Closing date</span><span class="rv-val">May 15, 2026</span></div>
+      <div class="review-row"><span class="rv-label">Maturity</span><span class="rv-val">May 15, 2033</span></div>
+      <div class="review-row"><span class="rv-label">Borrower</span><span class="rv-val">Meridian Crossings Holdings LLC</span></div>
+      <div class="review-row"><span class="rv-label">Guarantor</span><span class="rv-val">David & Sarah Chen</span></div>
+    </div>
+    <div class="review-card">
+      <h3>Financial covenant thresholds</h3>
+      <div class="review-row"><span class="rv-label">DSCR minimum</span><span class="rv-val">1.25x</span></div>
+      <div class="review-row"><span class="rv-label">DSCR — EOD floor</span><span class="rv-val">1.10x</span></div>
+      <div class="review-row"><span class="rv-label">LTV maximum</span><span class="rv-val">65.0%</span></div>
+      <div class="review-row"><span class="rv-label">Occupancy minimum</span><span class="rv-val">80.0%</span></div>
+      <div class="review-row"><span class="rv-label">Occupancy — EOD floor</span><span class="rv-val">70.0%</span></div>
+      <div class="review-row"><span class="rv-label">Guarantor net worth</span><span class="rv-val">Min $25.0M</span></div>
+      <div class="review-row"><span class="rv-label">Guarantor liquidity</span><span class="rv-val">Min $5.0M</span></div>
+      <div class="review-row"><span class="rv-label">Management fee cap</span><span class="rv-val">4.0%</span></div>
+    </div>
+    <div class="review-card">
+      <h3>Cash sweep triggers</h3>
+      <div class="review-row"><span class="rv-label">DSCR trigger</span><span class="rv-val">&lt; 1.20x</span></div>
+      <div class="review-row"><span class="rv-label">Occupancy trigger</span><span class="rv-val">&lt; 80% for 2 consecutive Q</span></div>
+      <div class="review-row"><span class="rv-label">Major tenant vacate</span><span class="rv-val">&gt; 10,000 SF</span></div>
+      <div class="review-row"><span class="rv-label">Cure condition</span><span class="rv-val">1.25x DSCR for 2 consec. Q</span></div>
+    </div>
+    <div class="review-card">
+      <h3>Reporting requirements</h3>
+      <div class="review-row"><span class="rv-label">Quarterly financials</span><span class="rv-val">45 days after Q end</span></div>
+      <div class="review-row"><span class="rv-label">Annual financials</span><span class="rv-val">90 days after FY end</span></div>
+      <div class="review-row"><span class="rv-label">Compliance certificate</span><span class="rv-val">With quarterly financials</span></div>
+      <div class="review-row"><span class="rv-label">Annual budget</span><span class="rv-val">Nov 15 for next year</span></div>
+      <div class="review-row"><span class="rv-label">Rent roll</span><span class="rv-val">Quarterly</span></div>
+      <div class="review-row"><span class="rv-label">Insurance renewal</span><span class="rv-val">15 days before expiry</span></div>
+    </div>
+  </div>
+  <div class="review-actions">
+    <button class="btn btn-secondary" onclick="showScreen('uploadScreen')">Re-upload</button>
+    <button class="btn btn-primary" onclick="showScreen('dashScreen')">Confirm &amp; build dashboard →</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 4: DASHBOARD ===== -->
+<div class="dash-screen" id="dashScreen">
+  <div class="top-bar">
+    <h1>Meridian Crossings — covenant monitoring</h1>
+    <div class="meta">
+      <span>Loan #GNB-2026-04281</span>
+      <span>Closing: May 15, 2026</span>
+      <span>Report as of: Q1 2027</span>
+    </div>
+  </div>
+
+  <!-- Document version bar -->
+  <div class="doc-version-bar">
+    <div class="dv-left">
+      <div class="dv-icon">📄</div>
+      <div class="dv-info">
+        <div class="dv-name">Commercial_Loan_Agreement_Meridian_Crossings.pdf</div>
+        <div class="dv-meta">Uploaded Mar 31, 2027 &middot; 32 pages &middot; 64 covenants extracted</div>
+      </div>
+    </div>
+    <div class="dv-right">
+      <span class="version-pill">v2 — current</span>
+      <button class="btn-sm" onclick="toggleDiff()">View changes from v1</button>
+      <button class="btn-sm" onclick="showScreen('uploadScreen')">Upload new version</button>
+    </div>
+  </div>
+
+  <!-- Diff panel (hidden by default) -->
+  <div class="diff-panel" id="diffPanel">
+    <div class="diff-header">
+      <h3>Changes: v1 (May 15, 2026) → v2 (Mar 31, 2027)</h3>
+      <button class="diff-close" onclick="toggleDiff()">×</button>
+    </div>
+    <table class="diff-table">
+      <thead>
+        <tr><th>Field</th><th>v1 (closing)</th><th>v2 (amendment)</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>DSCR minimum</td>
+          <td class="diff-old">1.30x</td>
+          <td class="diff-new">1.25x</td>
+          <td><span class="diff-tag changed">Changed</span></td>
+        </tr>
+        <tr>
+          <td>Cash sweep DSCR trigger</td>
+          <td class="diff-old">1.25x</td>
+          <td class="diff-new">1.20x</td>
+          <td><span class="diff-tag changed">Changed</span></td>
+        </tr>
+        <tr>
+          <td>Major tenant vacate threshold</td>
+          <td class="diff-unchanged">—</td>
+          <td class="diff-new">10,000 SF</td>
+          <td><span class="diff-tag added">Added</span></td>
+        </tr>
+        <tr>
+          <td>Environmental Phase I update</td>
+          <td class="diff-unchanged">—</td>
+          <td class="diff-new">Required within 90 days of request</td>
+          <td><span class="diff-tag added">Added</span></td>
+        </tr>
+        <tr>
+          <td>Occupancy minimum</td>
+          <td class="diff-unchanged">80.0%</td>
+          <td class="diff-unchanged">80.0%</td>
+          <td style="color:#999; font-size:11px">No change</td>
+        </tr>
+        <tr>
+          <td>LTV maximum</td>
+          <td class="diff-unchanged">65.0%</td>
+          <td class="diff-unchanged">65.0%</td>
+          <td style="color:#999; font-size:11px">No change</td>
+        </tr>
+        <tr>
+          <td>Guarantor NW minimum</td>
+          <td class="diff-unchanged">$25.0M</td>
+          <td class="diff-unchanged">$25.0M</td>
+          <td style="color:#999; font-size:11px">No change</td>
+        </tr>
+        <tr>
+          <td>Lockout period extension</td>
+          <td class="diff-old">24 months</td>
+          <td class="diff-new">18 months</td>
+          <td><span class="diff-tag changed">Changed</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi warn"><div class="kpi-label">DSCR</div><div class="kpi-val">1.22x</div><div class="kpi-sub">Min 1.25x &middot; Cash sweep active</div><div class="kpi-bar"></div></div>
+    <div class="kpi ok"><div class="kpi-label">LTV</div><div class="kpi-val">62.8%</div><div class="kpi-sub">Max 65.0%</div><div class="kpi-bar"></div></div>
+    <div class="kpi crit"><div class="kpi-label">Occupancy</div><div class="kpi-val">78.4%</div><div class="kpi-sub">Min 80.0% &middot; 1 of 2 quarters</div><div class="kpi-bar"></div></div>
+    <div class="kpi ok"><div class="kpi-label">Guarantor NW</div><div class="kpi-val">$31.2M</div><div class="kpi-sub">Min $25.0M</div><div class="kpi-bar"></div></div>
+    <div class="kpi ok"><div class="kpi-label">Guarantor liquidity</div><div class="kpi-val">$7.8M</div><div class="kpi-sub">Min $5.0M</div><div class="kpi-bar"></div></div>
+  </div>
+
+  <div class="sweep-banner"><strong>Cash sweep active</strong> — DSCR of 1.22x is below 1.25x threshold (triggered Q4 2026). Excess cash flow held in segregated account. Cure requires 1.25x+ for 2 consecutive quarters.</div>
+
+  <!-- Critical alerts with outreach buttons -->
+  <div class="alert-section">
+    <div class="alert-header"><div class="dot"></div> Requires immediate attention (3)</div>
+
+    <div class="alert-card">
+      <div class="alert-card-top">
+        <div>
+          <div class="a-name"><span class="cat-pill m">Metric</span>Physical occupancy below minimum</div>
+          <div class="a-detail">Dropped from 84.1% to 78.4% after HomeStyle Interiors vacated Suite A-110 (6,800 SF) on Nov 30, 2026. Second consecutive quarter below 80% triggers EOD. Currently at 1 of 2 quarters. &middot; Section 7.3</div>
+        </div>
+        <div class="a-val"><div class="num">78.4%</div><div class="thr">min 80.0%</div></div>
+      </div>
+      <div class="alert-card-actions">
+        <button class="outreach-btn primary" onclick="openEmailModal('occupancy')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+          Send notice to borrower
+        </button>
+        <button class="outreach-btn secondary" onclick="openEmailModal('occupancy')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>
+          Draft email
+        </button>
+      </div>
+    </div>
+
+    <div class="alert-card">
+      <div class="alert-card-top">
+        <div>
+          <div class="a-name"><span class="cat-pill e">Event</span>Major tenant vacate — HomeStyle Interiors</div>
+          <div class="a-detail">Vacated Suite A-110 (6,800 SF) at lease expiration Nov 30, 2026. Space currently dark. No replacement LOI in hand. Contributed $159,800/yr base rent. &middot; Section 4.6(d)</div>
+        </div>
+        <div class="a-val"><div class="num">6,800 SF</div><div class="thr">vacant since Nov '26</div></div>
+      </div>
+      <div class="alert-card-actions">
+        <button class="outreach-btn primary" onclick="openEmailModal('tenant')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+          Send notice to borrower
+        </button>
+        <button class="outreach-btn secondary" onclick="openEmailModal('tenant')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>
+          Draft email
+        </button>
+      </div>
+    </div>
+
+    <div class="alert-card">
+      <div class="alert-card-top">
+        <div>
+          <div class="a-name"><span class="cat-pill e">Event</span>Quarterly compliance certificate — overdue</div>
+          <div class="a-detail">Q4 2026 compliance certificate was due January 30, 2027. As of report date (March 31, 2027), still not received. 60 days overdue. Borrower cited accounting delays. &middot; Section 5.1(d)</div>
+        </div>
+        <div class="a-val"><div class="num">60 days</div><div class="thr">overdue</div></div>
+      </div>
+      <div class="alert-card-actions">
+        <button class="outreach-btn primary" onclick="openEmailModal('cert')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+          Send notice to borrower
+        </button>
+        <button class="outreach-btn secondary" onclick="openEmailModal('cert')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>
+          Draft email
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Watch list -->
+  <div class="alert-section">
+    <div class="warn-header">Watch list (4)</div>
+    <div class="warn-card"><div><div class="a-name"><span class="cat-pill m">Metric</span>DSCR below covenant — cash sweep triggered</div><div class="a-detail">Trailing 12-month DSCR fell from 1.31x (Q3 2026) to 1.22x (Q1 2027) driven by occupancy loss and rising insurance costs. Above 1.10x EOD threshold but below 1.25x covenant. &middot; Section 7.1</div></div><div class="a-val"><div class="num">1.22x</div><div class="thr">min 1.25x</div></div></div>
+    <div class="warn-card"><div><div class="a-name"><span class="cat-pill t">Trigger</span>Major tenant lease expiration within 12 months</div><div class="a-detail">Patel & Associates CPA (Suite B-210, 7,800 SF, $202,800/yr) lease expires May 31, 2029 — 26 months out, but renewal discussions have not started. &middot; Section 5.5(a)</div></div><div class="a-val"><div class="num">7,800 SF</div><div class="thr">exp. May '29</div></div></div>
+    <div class="warn-card"><div><div class="a-name"><span class="cat-pill m">Metric</span>LTV approaching covenant ceiling</div><div class="a-detail">LTV increased from 60.1% at closing to 62.8% as of Jan 2027 reappraisal. Value softened from $65.4M to $61.8M due to cap rate expansion. Only 2.2% headroom to 65% max. &middot; Section 7.2</div></div><div class="a-val"><div class="num">62.8%</div><div class="thr">max 65.0%</div></div></div>
+    <div class="warn-card"><div><div class="a-name"><span class="cat-pill e">Event</span>Insurance renewal — premium increase above budget</div><div class="a-detail">Property insurance renewed Feb 2027 at $162,000/yr (+18% vs. budget of $135,000). Escrow shortfall of $2,250/mo being spread over next 12 months. &middot; Section 8.1(a)</div></div><div class="a-val"><div class="num">+18%</div><div class="thr">vs. budget</div></div></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="two-col">
+    <div class="chart-card"><h3>DSCR trend (quarterly)</h3><div style="position:relative; height:180px;"><canvas id="dscrChart"></canvas></div></div>
+    <div class="chart-card"><h3>Occupancy trend (quarterly)</h3><div style="position:relative; height:180px;"><canvas id="occChart"></canvas></div></div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="section-label">Covenant status overview <span class="badge">Q1 2027</span></div>
+  <div class="tl-labels"><span>Q2 '26</span><span>Q3 '26</span><span>Q4 '26</span><span>Q1 '27</span></div>
+  <div class="timeline-row"><div class="tl-block g">DSCR</div><div class="tl-block g">DSCR</div><div class="tl-block y">DSCR</div><div class="tl-block y">DSCR</div></div>
+  <div class="timeline-row"><div class="tl-block g">LTV</div><div class="tl-block g">LTV</div><div class="tl-block g">LTV</div><div class="tl-block y">LTV</div></div>
+  <div class="timeline-row"><div class="tl-block g">OCC</div><div class="tl-block g">OCC</div><div class="tl-block y">OCC</div><div class="tl-block r">OCC</div></div>
+  <div style="height:12px"></div>
+
+  <!-- Table -->
+  <div class="tabs">
+    <button class="tab active" data-tab="all">All items</button>
+    <button class="tab" data-tab="metrics">Metrics</button>
+    <button class="tab" data-tab="events">Events</button>
+    <button class="tab" data-tab="triggers">Triggers</button>
+  </div>
+  <table class="items" id="itemTable"><thead><tr><th style="width:24px"></th><th style="width:38px">Type</th><th>Item</th><th style="width:100px">Current</th><th style="width:120px">Threshold</th><th style="width:65px">Ref</th><th style="width:80px">Updated</th><th style="width:170px">Notes</th></tr></thead><tbody id="tableBody"></tbody></table>
+</div>
+
+<!-- ===== EMAIL MODAL ===== -->
+<div class="modal-overlay" id="emailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Draft borrower notice</h3>
+      <button class="modal-close" onclick="closeEmailModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="generated-badge">✨ AI-drafted from loan agreement &middot; Section <span id="modalSection">7.3</span></div>
+      <div class="modal-field">
+        <label>To</label>
+        <input type="text" id="modalTo" value="david.chen@meridiancrossings.com">
+      </div>
+      <div class="modal-field">
+        <label>CC</label>
+        <input type="text" id="modalCc" value="sarah.chen@meridiancrossings.com; legal@gnblending.com">
+      </div>
+      <div class="modal-field">
+        <label>Subject</label>
+        <input type="text" id="modalSubject">
+      </div>
+      <div class="modal-field">
+        <label>Body</label>
+        <textarea id="modalBody"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
+      <button class="btn btn-secondary">Save as draft</button>
+      <button class="btn btn-purple" onclick="closeEmailModal()">Send notice</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== SCREEN MANAGEMENT =====
+function showScreen(id) {
+  document.querySelectorAll('.upload-screen, .extract-screen, .review-screen, .dash-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'dashScreen') initCharts();
+}
+
+// ===== UPLOAD LOGIC =====
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+document.getElementById('useDemoLink').addEventListener('click', () => {
+  document.getElementById('extractFileName').textContent = 'Commercial_Loan_Agreement_Meridian_Crossings.pdf';
+  document.getElementById('extractFileSize').textContent = '2.4 MB';
+  startExtraction();
+});
+
+function handleFile(file) {
+  document.getElementById('extractFileName').textContent = file.name;
+  document.getElementById('extractFileSize').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+  startExtraction();
+}
+
+function startExtraction() {
+  showScreen('extractScreen');
+  const steps = ['step1', 'step2', 'step3', 'step4', 'step5'];
+  const bar = document.getElementById('extractBarFill');
+  let i = 0;
+  function advance() {
+    if (i > 0) {
+      document.getElementById(steps[i - 1]).classList.remove('active');
+      document.getElementById(steps[i - 1]).classList.add('done');
+      document.getElementById(steps[i - 1]).querySelector('.step-icon').textContent = '✓';
+    }
+    if (i < steps.length) {
+      document.getElementById(steps[i]).classList.add('active');
+      bar.style.width = ((i + 1) / steps.length * 100) + '%';
+      i++;
+      setTimeout(advance, 900 + Math.random() * 600);
+    } else {
+      bar.style.width = '100%';
+      setTimeout(() => showScreen('reviewScreen'), 500);
+    }
+  }
+  // Reset steps
+  steps.forEach(s => {
+    const el = document.getElementById(s);
+    el.classList.remove('active', 'done');
+    el.querySelector('.step-icon').textContent = '⟳';
+  });
+  bar.style.width = '0%';
+  setTimeout(advance, 400);
+}
+
+// ===== DIFF PANEL =====
+function toggleDiff() {
+  document.getElementById('diffPanel').classList.toggle('open');
+}
+
+// ===== EMAIL MODAL =====
+const emailTemplates = {
+  occupancy: {
+    title: 'Notice: Physical occupancy below covenant minimum',
+    section: '7.3',
+    subject: 'Covenant Compliance Notice — Physical Occupancy Below 80% Minimum (Loan #GNB-2026-04281)',
+    body: `Dear David,
+
+Per Section 7.3 of the Loan Agreement dated May 15, 2026, the minimum physical occupancy covenant for the Property (Meridian Crossings, 8400 Meridian Blvd, Scottsdale, AZ) is 80.0%.
+
+As of the Q1 2027 reporting period, physical occupancy has declined to 78.4%, below the required minimum. This follows the departure of HomeStyle Interiors from Suite A-110 (6,800 SF) at lease expiration on November 30, 2026.
+
+Please be advised that per Section 7.3, a second consecutive quarter below the 80.0% minimum will constitute an Event of Default under the Loan Agreement. Q1 2027 represents the first of two potential qualifying quarters.
+
+We request:
+1. A leasing status update and pipeline report within 15 business days
+2. A remediation plan outlining projected occupancy recovery timeline
+3. Any signed LOIs or leases in negotiation for the vacant space
+
+Please direct any questions to our asset management team.
+
+Best regards,
+[Your name]
+GNB Lending — Asset Management`
+  },
+  tenant: {
+    title: 'Notice: Major tenant vacancy — leasing plan required',
+    section: '4.6(d)',
+    subject: 'Tenant Vacancy Notice — HomeStyle Interiors, Suite A-110 (Loan #GNB-2026-04281)',
+    body: `Dear David,
+
+This letter serves as formal notice pursuant to Section 4.6(d) of the Loan Agreement dated May 15, 2026 regarding the vacancy of HomeStyle Interiors from Suite A-110 (6,800 SF) at the Property.
+
+The tenant vacated at lease expiration on November 30, 2026. The space contributed $159,800 in annual base rent and represented approximately 8.1% of the net rentable area.
+
+Per the Loan Agreement, Borrower is required to provide:
+1. A written leasing plan for the vacant space within 30 days of this notice
+2. Monthly leasing activity reports until the space is re-tenanted
+3. Any proposed tenant improvement allowances for Lender approval if exceeding TI/LC reserve thresholds
+
+Additionally, this vacancy has contributed to the Property's occupancy falling below the 80% covenant minimum (currently 78.4%). Enhanced reporting under Section 5.2 is now in effect.
+
+Please submit the required leasing plan by [date + 30 days].
+
+Best regards,
+[Your name]
+GNB Lending — Asset Management`
+  },
+  cert: {
+    title: 'Final notice: Compliance certificate overdue',
+    section: '5.1(d)',
+    subject: 'FINAL NOTICE — Q4 2026 Compliance Certificate Overdue (Loan #GNB-2026-04281)',
+    body: `Dear David,
+
+This constitutes a FINAL NOTICE regarding the Q4 2026 compliance certificate required under Section 5.1(d) of the Loan Agreement dated May 15, 2026.
+
+The certificate was due January 30, 2027 and has not been received as of March 31, 2027 — 60 days past due. Previous reminder notices were sent on February 15, 2027 and March 1, 2027.
+
+Per Section 10.1 of the Loan Agreement, failure to deliver required financial reporting within 30 days of written notice from Lender constitutes an Event of Default.
+
+This notice triggers the 30-day cure period under Section 10.1. If the Q4 2026 compliance certificate is not received by [date + 30 days], Lender reserves the right to exercise all remedies available under Article XI of the Loan Agreement.
+
+We strongly urge immediate compliance. Please contact our asset management team if there are extenuating circumstances requiring discussion.
+
+Best regards,
+[Your name]
+GNB Lending — Asset Management`
+  }
+};
+
+function openEmailModal(type) {
+  const tpl = emailTemplates[type];
+  document.getElementById('modalTitle').textContent = tpl.title;
+  document.getElementById('modalSection').textContent = tpl.section;
+  document.getElementById('modalSubject').value = tpl.subject;
+  document.getElementById('modalBody').value = tpl.body;
+  document.getElementById('emailModal').classList.add('open');
+}
+function closeEmailModal() {
+  document.getElementById('emailModal').classList.remove('open');
+}
+document.getElementById('emailModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('emailModal')) closeEmailModal();
+});
+
+// ===== DATA & TABLE =====
+const DATA = [
+  { cat:'m', status:'warn', name:'DSCR (trailing 12-mo)', val:'1.22x', thr:'Min 1.25x', ref:'7.1', date:'Mar 27', note:'Cash sweep triggered Q4 2026' },
+  { cat:'m', status:'ok', name:'Loan-to-value ratio', val:'62.8%', thr:'Max 65.0%', ref:'7.2', date:'Jan 27', note:'2.2% headroom — watch' },
+  { cat:'m', status:'crit', name:'Physical occupancy', val:'78.4%', thr:'Min 80.0%', ref:'7.3', date:'Mar 27', note:'1 of 2 quarters below minimum' },
+  { cat:'m', status:'ok', name:'Guarantor net worth', val:'$31.2M', thr:'Min $25.0M', ref:'7.4(a)', date:'Dec 26', note:'' },
+  { cat:'m', status:'ok', name:'Guarantor liquidity', val:'$7.8M', thr:'Min $5.0M', ref:'7.4(b)', date:'Dec 26', note:'' },
+  { cat:'m', status:'warn', name:'Net operating income', val:'$3.92M', thr:'UW: $4.28M', ref:'1.1', date:'Mar 27', note:'-8.4% vs. underwriting' },
+  { cat:'m', status:'ok', name:'Appraised value', val:'$61.8M', thr:'Supports LTV', ref:'7.2', date:'Jan 27', note:'Down from $65.4M at closing' },
+  { cat:'m', status:'ok', name:'Monthly debt service', val:'$278,420', thr:'Per amort.', ref:'2.3', date:'Mar 27', note:'Current through March' },
+  { cat:'m', status:'ok', name:'Tax & insurance reserve', val:'$392,500', thr:'Per escrow', ref:'2.7(a)', date:'Mar 27', note:'Insurance escrow being trued up' },
+  { cat:'m', status:'ok', name:'Replacement reserve', val:'$289,063', thr:'$250K init.', ref:'2.7(b)', date:'Mar 27', note:'' },
+  { cat:'m', status:'ok', name:'TI/LC reserve', val:'$593,750', thr:'$750K init.', ref:'2.7(c)', date:'Mar 27', note:'$156K disbursed for Suite C-105 TI' },
+  { cat:'m', status:'ok', name:'Management fee', val:'3.8%', thr:'Max 4.0%', ref:'5.4', date:'Mar 27', note:'' },
+  { cat:'e', status:'crit', name:'HomeStyle Interiors — vacated', val:'6,800 SF', thr:'', ref:'4.6(d)', date:'Nov 26', note:'Lease expired, space dark' },
+  { cat:'e', status:'ok', name:'New lease — Suite C-105 (Barre3)', val:'4,200 SF', thr:'Non-major', ref:'5.5(b)', date:'Jan 27', note:'$26/SF, 5-yr term' },
+  { cat:'e', status:'crit', name:'Q4 compliance certificate', val:'Overdue', thr:'Due Jan 30', ref:'5.1(d)', date:'—', note:'60 days overdue' },
+  { cat:'e', status:'warn', name:'Q4 quarterly financials', val:'Pending', thr:'Due Feb 28', ref:'5.1(a)', date:'—', note:'30 days overdue' },
+  { cat:'e', status:'ok', name:'2027 annual budget', val:'Approved', thr:'Due Nov 15', ref:'5.3', date:'Nov 12', note:'' },
+  { cat:'e', status:'warn', name:'Distributions suspended', val:'Suspended', thr:'Sweep active', ref:'6.5', date:'Dec 26', note:'Since cash sweep' },
+  { cat:'e', status:'ok', name:'Insurance certs renewed', val:'Received', thr:'15 days pre-exp', ref:'8.3', date:'Feb 1', note:'' },
+  { cat:'e', status:'ok', name:'No ownership transfers', val:'None', thr:'', ref:'6.2', date:'Mar 27', note:'' },
+  { cat:'t', status:'warn', name:'DSCR <1.20x → cash sweep', val:'1.22x', thr:'Threshold 1.20x', ref:'2.9', date:'Mar 27', note:'Sweep via 1.25x covenant' },
+  { cat:'t', status:'crit', name:'Occupancy <80% 2 consec. Q', val:'Q4:78.9% Q1:78.4%', thr:'2 quarters', ref:'7.3', date:'Mar 27', note:'1 of 2 — next Q critical' },
+  { cat:'t', status:'warn', name:'Cash sweep active', val:'Active', thr:'', ref:'2.9', date:'Dec 26', note:'Needs 1.25x for 2Q to cure' },
+  { cat:'t', status:'ok', name:'DSCR vs. 1.10x EOD floor', val:'1.22x', thr:'Min 1.10x', ref:'7.1(c)', date:'Mar 27', note:'12bps headroom' },
+  { cat:'t', status:'ok', name:'LTV vs. 65% EOD threshold', val:'62.8%', thr:'Max 65%', ref:'7.2', date:'Jan 27', note:'2.2% headroom' },
+  { cat:'t', status:'ok', name:'Payment timeliness', val:'Current', thr:'5 BD grace', ref:'10.1(a)', date:'Mar 27', note:'' },
+  { cat:'t', status:'ok', name:'No unauthorized liens', val:'Clear', thr:'', ref:'10.1(b)', date:'Mar 27', note:'' },
+  { cat:'t', status:'ok', name:'SPE compliance', val:'Compliant', thr:'', ref:'10.1(b)', date:'Mar 27', note:'Ind. director in place' },
+  { cat:'t', status:'ok', name:'Insurance in force', val:'Current', thr:'10-day cure', ref:'10.1(l)', date:'Feb 27', note:'' },
+];
+
+function renderTable(filter) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  const filtered = filter === 'all' ? DATA : DATA.filter(d => d.cat === filter[0]);
+  const order = { crit: 0, warn: 1, ok: 2, pending: 3, na: 4 };
+  const sorted = [...filtered].sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
+  sorted.forEach(d => {
+    const catLabel = { m: 'Metric', e: 'Event', t: 'Trigger' }[d.cat];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><span class="status-dot ${d.status}"></span></td><td><span class="cat-pill ${d.cat}">${catLabel}</span></td><td>${d.name}</td><td class="val-cell">${d.val}</td><td class="thr-cell">${d.thr}</td><td class="ref-cell">${d.ref}</td><td class="date-cell">${d.date}</td><td class="note-cell">${d.note}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', e => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    renderTable(e.target.dataset.tab);
+  });
+});
+
+// ===== CHARTS =====
+let chartsInit = false;
+function initCharts() {
+  if (chartsInit) return;
+  chartsInit = true;
+  renderTable('all');
+
+  const chartFont = { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif", size: 11 };
+  const gridColor = '#f1efe8';
+
+  new Chart(document.getElementById('dscrChart'), {
+    type: 'line',
+    data: {
+      labels: ['Q2 \'26', 'Q3 \'26', 'Q4 \'26', 'Q1 \'27'],
+      datasets: [
+        { label: 'DSCR', data: [1.35, 1.31, 1.24, 1.22], borderColor: '#534AB7', backgroundColor: 'rgba(83,74,183,0.08)', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#534AB7', borderWidth: 2 },
+        { label: 'Covenant (1.25x)', data: [1.25, 1.25, 1.25, 1.25], borderColor: '#F09595', borderDash: [6, 3], borderWidth: 1.5, pointRadius: 0, fill: false },
+        { label: 'EOD (1.10x)', data: [1.10, 1.10, 1.10, 1.10], borderColor: '#E24B4A', borderDash: [3, 3], borderWidth: 1, pointRadius: 0, fill: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12, padding: 10 } } },
+      scales: {
+        y: { min: 1.0, max: 1.5, grid: { color: gridColor }, ticks: { font: chartFont, callback: v => v.toFixed(2) + 'x' } },
+        x: { grid: { display: false }, ticks: { font: chartFont } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('occChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Q2 \'26', 'Q3 \'26', 'Q4 \'26', 'Q1 \'27'],
+      datasets: [
+        { label: 'Occupancy', data: [91.2, 91.2, 84.1, 78.4], backgroundColor: d => d.raw < 80 ? '#F09595' : d.raw < 85 ? '#FAC775' : '#9FE1CB', borderRadius: 4, barPercentage: 0.6 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 60, max: 100, grid: { color: gridColor }, ticks: { font: chartFont, callback: v => v + '%' } },
+        x: { grid: { display: false }, ticks: { font: chartFont } }
+      }
+    }
+  });
+
+  Chart.register({
+    id: 'occThresholds',
+    afterDraw(chart) {
+      if (chart.canvas.id !== 'occChart') return;
+      const ctx = chart.ctx;
+      const yScale = chart.scales.y;
+      const xScale = chart.scales.x;
+      [{ val: 80, color: '#EF9F27', dash: [6,3] }, { val: 70, color: '#E24B4A', dash: [3,3] }].forEach(line => {
+        const y = yScale.getPixelForValue(line.val);
+        ctx.save(); ctx.strokeStyle = line.color; ctx.lineWidth = 1.5; ctx.setLineDash(line.dash);
+        ctx.beginPath(); ctx.moveTo(xScale.left, y); ctx.lineTo(xScale.right, y); ctx.stroke(); ctx.restore();
+        ctx.save(); ctx.fillStyle = line.color; ctx.font = '9px -apple-system, sans-serif';
+        ctx.fillText(line.val + '%', xScale.right + 4, y + 3); ctx.restore();
+      });
+    }
+  });
+}
+</script>
+</body>
+</html>

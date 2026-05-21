@@ -109,6 +109,31 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sa
 .diff-tag.changed { background: #EEEDFE; color: #534AB7; }
 .diff-tag.removed { background: #FDECEC; color: #A32D2D; }
 
+/* PDF slide-out panel */
+.pdf-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.pdf-overlay.open { opacity: 1; pointer-events: auto; }
+.pdf-panel { position: fixed; right: 0; top: 0; height: 100vh; width: 45%; background: #fff; z-index: 1000; transform: translateX(100%); transition: transform 0.3s ease; box-shadow: none; display: flex; flex-direction: column; }
+.pdf-panel.open { transform: translateX(0); box-shadow: -8px 0 30px rgba(0,0,0,0.12); }
+.pdf-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 0.5px solid #e5e3de; background: #fafaf8; flex-shrink: 0; }
+.pdf-panel-header .pdf-doc-info { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; min-width: 0; }
+.pdf-panel-header .pdf-doc-icon { font-size: 18px; flex-shrink: 0; }
+.pdf-panel-header .pdf-doc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pdf-panel-header .pdf-page-num { font-size: 12px; color: #888; white-space: nowrap; flex-shrink: 0; }
+.pdf-panel-close { cursor: pointer; font-size: 22px; color: #999; border: none; background: none; padding: 0 4px; flex-shrink: 0; margin-left: 12px; }
+.pdf-panel-close:hover { color: #333; }
+.pdf-section-pill { display: inline-block; font-size: 11px; font-weight: 600; background: #EEEDFE; color: #534AB7; padding: 3px 10px; border-radius: 12px; margin: 16px 20px 0; }
+.pdf-page-wrapper { flex: 1; overflow-y: auto; padding: 16px 20px 20px; }
+.pdf-page { max-width: 100%; background: #fff; border: 1px solid #e5e3de; border-radius: 4px; padding: 48px 56px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; line-height: 2; color: #2a2a2a; }
+.pdf-page-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+.pdf-page-body p { margin-bottom: 14px; text-align: justify; }
+.pdf-highlight { background: #FFF3CD; border-left: 3px solid #EF9F27; padding: 2px 4px; }
+.pdf-page-nav { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px 20px; border-top: 0.5px solid #e5e3de; background: #fafaf8; flex-shrink: 0; }
+.pdf-page-nav button { padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 0.5px solid #d3d1c7; background: #fff; color: #666; }
+.pdf-page-nav button:hover { background: #f0efe8; }
+.pdf-page-nav .pdf-nav-current { font-size: 12px; color: #888; }
+.alert-card { cursor: pointer; }
+.warn-card { cursor: pointer; }
+
 /* KPI row */
 .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
 .kpi { background: #fff; border: 0.5px solid #e5e3de; border-radius: 10px; padding: 12px 14px; position: relative; overflow: hidden; }
@@ -348,54 +373,14 @@ table.items tbody tr:hover { background: #fafaf8; }
         <tr><th>Field</th><th>v1 (closing)</th><th>v2 (amendment)</th><th></th></tr>
       </thead>
       <tbody>
-        <tr>
-          <td>DSCR minimum</td>
-          <td class="diff-old">1.30x</td>
-          <td class="diff-new">1.25x</td>
-          <td><span class="diff-tag changed">Changed</span></td>
-        </tr>
-        <tr>
-          <td>Cash sweep DSCR trigger</td>
-          <td class="diff-old">1.25x</td>
-          <td class="diff-new">1.20x</td>
-          <td><span class="diff-tag changed">Changed</span></td>
-        </tr>
-        <tr>
-          <td>Major tenant vacate threshold</td>
-          <td class="diff-unchanged">—</td>
-          <td class="diff-new">10,000 SF</td>
-          <td><span class="diff-tag added">Added</span></td>
-        </tr>
-        <tr>
-          <td>Environmental Phase I update</td>
-          <td class="diff-unchanged">—</td>
-          <td class="diff-new">Required within 90 days of request</td>
-          <td><span class="diff-tag added">Added</span></td>
-        </tr>
-        <tr>
-          <td>Occupancy minimum</td>
-          <td class="diff-unchanged">80.0%</td>
-          <td class="diff-unchanged">80.0%</td>
-          <td style="color:#999; font-size:11px">No change</td>
-        </tr>
-        <tr>
-          <td>LTV maximum</td>
-          <td class="diff-unchanged">65.0%</td>
-          <td class="diff-unchanged">65.0%</td>
-          <td style="color:#999; font-size:11px">No change</td>
-        </tr>
-        <tr>
-          <td>Guarantor NW minimum</td>
-          <td class="diff-unchanged">$25.0M</td>
-          <td class="diff-unchanged">$25.0M</td>
-          <td style="color:#999; font-size:11px">No change</td>
-        </tr>
-        <tr>
-          <td>Lockout period extension</td>
-          <td class="diff-old">24 months</td>
-          <td class="diff-new">18 months</td>
-          <td><span class="diff-tag changed">Changed</span></td>
-        </tr>
+        <tr><td>DSCR minimum</td><td class="diff-old">1.30x</td><td class="diff-new">1.25x</td><td><span class="diff-tag changed">Changed</span></td></tr>
+        <tr><td>Cash sweep DSCR trigger</td><td class="diff-old">1.25x</td><td class="diff-new">1.20x</td><td><span class="diff-tag changed">Changed</span></td></tr>
+        <tr><td>Major tenant vacate threshold</td><td class="diff-unchanged">—</td><td class="diff-new">10,000 SF</td><td><span class="diff-tag added">Added</span></td></tr>
+        <tr><td>Environmental Phase I update</td><td class="diff-unchanged">—</td><td class="diff-new">Required within 90 days of request</td><td><span class="diff-tag added">Added</span></td></tr>
+        <tr><td>Occupancy minimum</td><td class="diff-unchanged">80.0%</td><td class="diff-unchanged">80.0%</td><td style="color:#999; font-size:11px">No change</td></tr>
+        <tr><td>LTV maximum</td><td class="diff-unchanged">65.0%</td><td class="diff-unchanged">65.0%</td><td style="color:#999; font-size:11px">No change</td></tr>
+        <tr><td>Guarantor NW minimum</td><td class="diff-unchanged">$25.0M</td><td class="diff-unchanged">$25.0M</td><td style="color:#999; font-size:11px">No change</td></tr>
+        <tr><td>Lockout period extension</td><td class="diff-old">24 months</td><td class="diff-new">18 months</td><td><span class="diff-tag changed">Changed</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -415,7 +400,7 @@ table.items tbody tr:hover { background: #fafaf8; }
   <div class="alert-section">
     <div class="alert-header"><div class="dot"></div> Requires immediate attention (3)</div>
 
-    <div class="alert-card">
+    <div class="alert-card" data-covenant="occupancy">
       <div class="alert-card-top">
         <div>
           <div class="a-name"><span class="cat-pill m">Metric</span>Physical occupancy below minimum</div>
@@ -424,18 +409,12 @@ table.items tbody tr:hover { background: #fafaf8; }
         <div class="a-val"><div class="num">78.4%</div><div class="thr">min 80.0%</div></div>
       </div>
       <div class="alert-card-actions">
-        <button class="outreach-btn primary" onclick="openEmailModal('occupancy')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-          Send notice to borrower
-        </button>
-        <button class="outreach-btn secondary" onclick="openEmailModal('occupancy')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>
-          Draft email
-        </button>
+        <button class="outreach-btn primary" onclick="openEmailModal('occupancy')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>Send notice to borrower</button>
+        <button class="outreach-btn secondary" onclick="openEmailModal('occupancy')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>Draft email</button>
       </div>
     </div>
 
-    <div class="alert-card">
+    <div class="alert-card" data-covenant="tenant">
       <div class="alert-card-top">
         <div>
           <div class="a-name"><span class="cat-pill e">Event</span>Major tenant vacate — HomeStyle Interiors</div>
@@ -444,18 +423,12 @@ table.items tbody tr:hover { background: #fafaf8; }
         <div class="a-val"><div class="num">6,800 SF</div><div class="thr">vacant since Nov '26</div></div>
       </div>
       <div class="alert-card-actions">
-        <button class="outreach-btn primary" onclick="openEmailModal('tenant')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-          Send notice to borrower
-        </button>
-        <button class="outreach-btn secondary" onclick="openEmailModal('tenant')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>
-          Draft email
-        </button>
+        <button class="outreach-btn primary" onclick="openEmailModal('tenant')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>Send notice to borrower</button>
+        <button class="outreach-btn secondary" onclick="openEmailModal('tenant')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>Draft email</button>
       </div>
     </div>
 
-    <div class="alert-card">
+    <div class="alert-card" data-covenant="cert">
       <div class="alert-card-top">
         <div>
           <div class="a-name"><span class="cat-pill e">Event</span>Quarterly compliance certificate — overdue</div>
@@ -464,14 +437,8 @@ table.items tbody tr:hover { background: #fafaf8; }
         <div class="a-val"><div class="num">60 days</div><div class="thr">overdue</div></div>
       </div>
       <div class="alert-card-actions">
-        <button class="outreach-btn primary" onclick="openEmailModal('cert')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-          Send notice to borrower
-        </button>
-        <button class="outreach-btn secondary" onclick="openEmailModal('cert')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>
-          Draft email
-        </button>
+        <button class="outreach-btn primary" onclick="openEmailModal('cert')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>Send notice to borrower</button>
+        <button class="outreach-btn secondary" onclick="openEmailModal('cert')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13L2 4"/></svg>Draft email</button>
       </div>
     </div>
   </div>
@@ -479,10 +446,10 @@ table.items tbody tr:hover { background: #fafaf8; }
   <!-- Watch list -->
   <div class="alert-section">
     <div class="warn-header">Watch list (4)</div>
-    <div class="warn-card"><div><div class="a-name"><span class="cat-pill m">Metric</span>DSCR below covenant — cash sweep triggered</div><div class="a-detail">Trailing 12-month DSCR fell from 1.31x (Q3 2026) to 1.22x (Q1 2027) driven by occupancy loss and rising insurance costs. Above 1.10x EOD threshold but below 1.25x covenant. &middot; Section 7.1</div></div><div class="a-val"><div class="num">1.22x</div><div class="thr">min 1.25x</div></div></div>
-    <div class="warn-card"><div><div class="a-name"><span class="cat-pill t">Trigger</span>Major tenant lease expiration within 12 months</div><div class="a-detail">Patel & Associates CPA (Suite B-210, 7,800 SF, $202,800/yr) lease expires May 31, 2029 — 26 months out, but renewal discussions have not started. &middot; Section 5.5(a)</div></div><div class="a-val"><div class="num">7,800 SF</div><div class="thr">exp. May '29</div></div></div>
-    <div class="warn-card"><div><div class="a-name"><span class="cat-pill m">Metric</span>LTV approaching covenant ceiling</div><div class="a-detail">LTV increased from 60.1% at closing to 62.8% as of Jan 2027 reappraisal. Value softened from $65.4M to $61.8M due to cap rate expansion. Only 2.2% headroom to 65% max. &middot; Section 7.2</div></div><div class="a-val"><div class="num">62.8%</div><div class="thr">max 65.0%</div></div></div>
-    <div class="warn-card"><div><div class="a-name"><span class="cat-pill e">Event</span>Insurance renewal — premium increase above budget</div><div class="a-detail">Property insurance renewed Feb 2027 at $162,000/yr (+18% vs. budget of $135,000). Escrow shortfall of $2,250/mo being spread over next 12 months. &middot; Section 8.1(a)</div></div><div class="a-val"><div class="num">+18%</div><div class="thr">vs. budget</div></div></div>
+    <div class="warn-card" data-covenant="dscr"><div><div class="a-name"><span class="cat-pill m">Metric</span>DSCR below covenant — cash sweep triggered</div><div class="a-detail">Trailing 12-month DSCR fell from 1.31x (Q3 2026) to 1.22x (Q1 2027) driven by occupancy loss and rising insurance costs. Above 1.10x EOD threshold but below 1.25x covenant. &middot; Section 7.1</div></div><div class="a-val"><div class="num">1.22x</div><div class="thr">min 1.25x</div></div></div>
+    <div class="warn-card" data-covenant="lease_exp"><div><div class="a-name"><span class="cat-pill t">Trigger</span>Major tenant lease expiration within 12 months</div><div class="a-detail">Patel & Associates CPA (Suite B-210, 7,800 SF, $202,800/yr) lease expires May 31, 2029 — 26 months out, but renewal discussions have not started. &middot; Section 5.5(a)</div></div><div class="a-val"><div class="num">7,800 SF</div><div class="thr">exp. May '29</div></div></div>
+    <div class="warn-card" data-covenant="ltv"><div><div class="a-name"><span class="cat-pill m">Metric</span>LTV approaching covenant ceiling</div><div class="a-detail">LTV increased from 60.1% at closing to 62.8% as of Jan 2027 reappraisal. Value softened from $65.4M to $61.8M due to cap rate expansion. Only 2.2% headroom to 65% max. &middot; Section 7.2</div></div><div class="a-val"><div class="num">62.8%</div><div class="thr">max 65.0%</div></div></div>
+    <div class="warn-card" data-covenant="insurance"><div><div class="a-name"><span class="cat-pill e">Event</span>Insurance renewal — premium increase above budget</div><div class="a-detail">Property insurance renewed Feb 2027 at $162,000/yr (+18% vs. budget of $135,000). Escrow shortfall of $2,250/mo being spread over next 12 months. &middot; Section 8.1(a)</div></div><div class="a-val"><div class="num">+18%</div><div class="thr">vs. budget</div></div></div>
   </div>
 
   <!-- Charts -->
@@ -518,28 +485,40 @@ table.items tbody tr:hover { background: #fafaf8; }
     </div>
     <div class="modal-body">
       <div class="generated-badge">✨ AI-drafted from loan agreement &middot; Section <span id="modalSection">7.3</span></div>
-      <div class="modal-field">
-        <label>To</label>
-        <input type="text" id="modalTo" value="david.chen@meridiancrossings.com">
-      </div>
-      <div class="modal-field">
-        <label>CC</label>
-        <input type="text" id="modalCc" value="sarah.chen@meridiancrossings.com; legal@gnblending.com">
-      </div>
-      <div class="modal-field">
-        <label>Subject</label>
-        <input type="text" id="modalSubject">
-      </div>
-      <div class="modal-field">
-        <label>Body</label>
-        <textarea id="modalBody"></textarea>
-      </div>
+      <div class="modal-field"><label>To</label><input type="text" id="modalTo" value="david.chen@meridiancrossings.com"></div>
+      <div class="modal-field"><label>CC</label><input type="text" id="modalCc" value="sarah.chen@meridiancrossings.com; legal@gnblending.com"></div>
+      <div class="modal-field"><label>Subject</label><input type="text" id="modalSubject"></div>
+      <div class="modal-field"><label>Body</label><textarea id="modalBody"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
       <button class="btn btn-secondary">Save as draft</button>
       <button class="btn btn-purple" onclick="closeEmailModal()">Send notice</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== PDF SLIDE-OUT PANEL ===== -->
+<div class="pdf-overlay" id="pdfOverlay"></div>
+<div class="pdf-panel" id="pdfPanel">
+  <div class="pdf-panel-header">
+    <div class="pdf-doc-info">
+      <span class="pdf-doc-icon">📄</span>
+      <span class="pdf-doc-name">Commercial_Loan_Agreement_Meridian_Crossings.pdf</span>
+    </div>
+    <span class="pdf-page-num">Page 1 of 32</span>
+    <button class="pdf-panel-close" onclick="closePdfPanel()">×</button>
+  </div>
+  <div class="pdf-section-pill" id="pdfSectionPill">Section 7.3</div>
+  <div class="pdf-page-wrapper">
+    <div class="pdf-page">
+      <div class="pdf-page-content" id="pdfPageContent"></div>
+    </div>
+  </div>
+  <div class="pdf-page-nav">
+    <button onclick="pdfPagePrev()">← Prev</button>
+    <span class="pdf-nav-current" id="pdfNavCurrent">Page 18 of 32</span>
+    <button onclick="pdfPageNext()">Next →</button>
   </div>
 </div>
 
@@ -593,7 +572,6 @@ function startExtraction() {
       setTimeout(() => showScreen('reviewScreen'), 500);
     }
   }
-  // Reset steps
   steps.forEach(s => {
     const el = document.getElementById(s);
     el.classList.remove('active', 'done');
@@ -614,67 +592,19 @@ const emailTemplates = {
     title: 'Notice: Physical occupancy below covenant minimum',
     section: '7.3',
     subject: 'Covenant Compliance Notice — Physical Occupancy Below 80% Minimum (Loan #GNB-2026-04281)',
-    body: `Dear David,
-
-Per Section 7.3 of the Loan Agreement dated May 15, 2026, the minimum physical occupancy covenant for the Property (Meridian Crossings, 8400 Meridian Blvd, Scottsdale, AZ) is 80.0%.
-
-As of the Q1 2027 reporting period, physical occupancy has declined to 78.4%, below the required minimum. This follows the departure of HomeStyle Interiors from Suite A-110 (6,800 SF) at lease expiration on November 30, 2026.
-
-Please be advised that per Section 7.3, a second consecutive quarter below the 80.0% minimum will constitute an Event of Default under the Loan Agreement. Q1 2027 represents the first of two potential qualifying quarters.
-
-We request:
-1. A leasing status update and pipeline report within 15 business days
-2. A remediation plan outlining projected occupancy recovery timeline
-3. Any signed LOIs or leases in negotiation for the vacant space
-
-Please direct any questions to our asset management team.
-
-Best regards,
-[Your name]
-GNB Lending — Asset Management`
+    body: "Dear David,\n\nPer Section 7.3 of the Loan Agreement dated May 15, 2026, the minimum physical occupancy covenant for the Property (Meridian Crossings, 8400 Meridian Blvd, Scottsdale, AZ) is 80.0%.\n\nAs of the Q1 2027 reporting period, physical occupancy has declined to 78.4%, below the required minimum. This follows the departure of HomeStyle Interiors from Suite A-110 (6,800 SF) at lease expiration on November 30, 2026.\n\nPlease be advised that per Section 7.3, a second consecutive quarter below the 80.0% minimum will constitute an Event of Default under the Loan Agreement. Q1 2027 represents the first of two potential qualifying quarters.\n\nWe request:\n1. A leasing status update and pipeline report within 15 business days\n2. A remediation plan outlining projected occupancy recovery timeline\n3. Any signed LOIs or leases in negotiation for the vacant space\n\nPlease direct any questions to our asset management team.\n\nBest regards,\n[Your name]\nGNB Lending — Asset Management"
   },
   tenant: {
     title: 'Notice: Major tenant vacancy — leasing plan required',
     section: '4.6(d)',
     subject: 'Tenant Vacancy Notice — HomeStyle Interiors, Suite A-110 (Loan #GNB-2026-04281)',
-    body: `Dear David,
-
-This letter serves as formal notice pursuant to Section 4.6(d) of the Loan Agreement dated May 15, 2026 regarding the vacancy of HomeStyle Interiors from Suite A-110 (6,800 SF) at the Property.
-
-The tenant vacated at lease expiration on November 30, 2026. The space contributed $159,800 in annual base rent and represented approximately 8.1% of the net rentable area.
-
-Per the Loan Agreement, Borrower is required to provide:
-1. A written leasing plan for the vacant space within 30 days of this notice
-2. Monthly leasing activity reports until the space is re-tenanted
-3. Any proposed tenant improvement allowances for Lender approval if exceeding TI/LC reserve thresholds
-
-Additionally, this vacancy has contributed to the Property's occupancy falling below the 80% covenant minimum (currently 78.4%). Enhanced reporting under Section 5.2 is now in effect.
-
-Please submit the required leasing plan by [date + 30 days].
-
-Best regards,
-[Your name]
-GNB Lending — Asset Management`
+    body: "Dear David,\n\nThis letter serves as formal notice pursuant to Section 4.6(d) of the Loan Agreement dated May 15, 2026 regarding the vacancy of HomeStyle Interiors from Suite A-110 (6,800 SF) at the Property.\n\nThe tenant vacated at lease expiration on November 30, 2026. The space contributed $159,800 in annual base rent and represented approximately 8.1% of the net rentable area.\n\nPer the Loan Agreement, Borrower is required to provide:\n1. A written leasing plan for the vacant space within 30 days of this notice\n2. Monthly leasing activity reports until the space is re-tenanted\n3. Any proposed tenant improvement allowances for Lender approval if exceeding TI/LC reserve thresholds\n\nAdditionally, this vacancy has contributed to the Property's occupancy falling below the 80% covenant minimum (currently 78.4%). Enhanced reporting under Section 5.2 is now in effect.\n\nPlease submit the required leasing plan by [date + 30 days].\n\nBest regards,\n[Your name]\nGNB Lending — Asset Management"
   },
   cert: {
     title: 'Final notice: Compliance certificate overdue',
     section: '5.1(d)',
     subject: 'FINAL NOTICE — Q4 2026 Compliance Certificate Overdue (Loan #GNB-2026-04281)',
-    body: `Dear David,
-
-This constitutes a FINAL NOTICE regarding the Q4 2026 compliance certificate required under Section 5.1(d) of the Loan Agreement dated May 15, 2026.
-
-The certificate was due January 30, 2027 and has not been received as of March 31, 2027 — 60 days past due. Previous reminder notices were sent on February 15, 2027 and March 1, 2027.
-
-Per Section 10.1 of the Loan Agreement, failure to deliver required financial reporting within 30 days of written notice from Lender constitutes an Event of Default.
-
-This notice triggers the 30-day cure period under Section 10.1. If the Q4 2026 compliance certificate is not received by [date + 30 days], Lender reserves the right to exercise all remedies available under Article XI of the Loan Agreement.
-
-We strongly urge immediate compliance. Please contact our asset management team if there are extenuating circumstances requiring discussion.
-
-Best regards,
-[Your name]
-GNB Lending — Asset Management`
+    body: "Dear David,\n\nThis constitutes a FINAL NOTICE regarding the Q4 2026 compliance certificate required under Section 5.1(d) of the Loan Agreement dated May 15, 2026.\n\nThe certificate was due January 30, 2027 and has not been received as of March 31, 2027 — 60 days past due. Previous reminder notices were sent on February 15, 2027 and March 1, 2027.\n\nPer Section 10.1 of the Loan Agreement, failure to deliver required financial reporting within 30 days of written notice from Lender constitutes an Event of Default.\n\nThis notice triggers the 30-day cure period under Section 10.1. If the Q4 2026 compliance certificate is not received by [date + 30 days], Lender reserves the right to exercise all remedies available under Article XI of the Loan Agreement.\n\nWe strongly urge immediate compliance. Please contact our asset management team if there are extenuating circumstances requiring discussion.\n\nBest regards,\n[Your name]\nGNB Lending — Asset Management"
   }
 };
 
@@ -691,6 +621,118 @@ function closeEmailModal() {
 }
 document.getElementById('emailModal').addEventListener('click', e => {
   if (e.target === document.getElementById('emailModal')) closeEmailModal();
+});
+
+// ===== PDF PANEL =====
+const COVENANT_PAGES = {
+  'occupancy': {
+    section: 'Section 7.3',
+    page: 18,
+    title: 'Physical Occupancy Covenant',
+    before: 'The Borrower shall maintain a Physical Occupancy Rate at the Property of not less than',
+    highlight: 'eighty percent (80%) of the total net rentable square footage of the Property, measured as of the last day of each calendar quarter. In the event the Physical Occupancy Rate falls below the Minimum Occupancy Threshold for two (2) consecutive calendar quarters, such occurrence shall constitute an Event of Default.',
+    after: 'For purposes of this Section, \u201cPhysical Occupancy Rate\u201d shall mean the ratio of (i) the aggregate net rentable square footage of all Leases in effect where the tenant has taken physical occupancy and is paying unabated rent, to (ii) the total net rentable square footage of the Property.'
+  },
+  'tenant': {
+    section: 'Section 4.6(d)',
+    page: 14,
+    title: 'Major Tenant Vacancy Notification',
+    before: 'The Borrower shall provide written notice to the Lender within five (5) Business Days of becoming aware that',
+    highlight: 'any Major Tenant (defined as any tenant occupying 5,000 or more net rentable square feet or contributing 10% or more of the Property\u2019s gross rental income) has (i) vacated or abandoned its premises, (ii) ceased operating its business at the Property, (iii) filed or had filed against it a petition in bankruptcy, or (iv) indicated in writing its intent to terminate its Lease prior to the scheduled expiration date.',
+    after: 'Upon the occurrence of any such event, the Borrower shall deliver to the Lender a Leasing Status Report within fifteen (15) days detailing the status of the affected space, any replacement tenant prospects, and an updated rent roll.'
+  },
+  'cert': {
+    section: 'Section 5.1(d)',
+    page: 15,
+    title: 'Compliance Certificate Requirements',
+    before: 'Together with each delivery of quarterly financial statements as required under Section 5.1(a), the Borrower shall deliver to the Lender',
+    highlight: 'a Compliance Certificate, in the form attached hereto as Exhibit D, executed by an authorized officer of the Borrower, certifying (i) the Borrower\u2019s compliance with all financial covenants set forth in Article VII as of the end of such quarter, (ii) the calculation of each financial covenant in reasonable detail, and (iii) whether any Default or Event of Default has occurred and is continuing.',
+    after: 'Each Compliance Certificate shall be delivered no later than forty-five (45) days after the end of the applicable calendar quarter. Failure to deliver a Compliance Certificate within thirty (30) days of written notice from the Lender shall constitute an Event of Default under Section 10.1.'
+  },
+  'dscr': {
+    section: 'Section 7.1',
+    page: 17,
+    title: 'Debt Service Coverage Ratio Covenant',
+    before: 'The Borrower shall maintain a Debt Service Coverage Ratio (\u201cDSCR\u201d) for the Property, calculated on a trailing twelve (12) month basis, of',
+    highlight: 'not less than 1.25x as of the last day of each calendar quarter. In the event the DSCR falls below 1.25x but remains at or above 1.10x, a Cash Sweep Period shall commence in accordance with Section 2.9. In the event the DSCR falls below 1.10x for any calendar quarter, such occurrence shall constitute an Event of Default.',
+    after: 'For purposes of this Section, \u201cDebt Service Coverage Ratio\u201d shall mean the ratio of (i) Net Operating Income for the applicable trailing twelve-month period, to (ii) the aggregate amount of all scheduled payments of principal and interest on the Loan for such period.'
+  },
+  'lease_exp': {
+    section: 'Section 5.5(a)',
+    page: 16,
+    title: 'Lease Expiration and Renewal Reporting',
+    before: 'The Borrower shall deliver to the Lender, on a quarterly basis, a detailed schedule of all',
+    highlight: 'Lease expirations occurring within the next twenty-four (24) months (the \u201cLease Expiration Schedule\u201d), together with a description of any renewal discussions or new tenant prospects for each expiring Lease. For any Major Tenant Lease expiring within twelve (12) months, the Borrower shall provide a written status report detailing the progress of renewal negotiations and any proposed material changes to the Lease terms.',
+    after: 'In the event a Major Tenant Lease is not renewed or replaced with a Qualifying Replacement Lease at least six (6) months prior to its expiration, the Lender may require an additional deposit to the TI/LC Reserve in an amount determined by the Lender in its reasonable discretion.'
+  },
+  'ltv': {
+    section: 'Section 7.2',
+    page: 17,
+    title: 'Loan-to-Value Ratio Covenant',
+    before: 'The Borrower acknowledges that the Loan was underwritten based on an appraised value of the Property. The',
+    highlight: 'Loan-to-Value Ratio shall not exceed sixty-five percent (65%) at any time during the term of the Loan, based upon the most recent Approved Appraisal. In the event the LTV Ratio exceeds 65%, the Borrower shall, within thirty (30) days of notice from the Lender, either (i) make a principal prepayment sufficient to reduce the LTV Ratio to 65% or below, or (ii) deliver additional collateral acceptable to the Lender.',
+    after: 'The Lender shall have the right to obtain an updated appraisal of the Property at the Borrower\u2019s expense (i) annually, (ii) upon the occurrence of any material adverse change in the Property\u2019s condition or market, or (iii) at any time that the Lender reasonably believes the LTV Ratio may exceed the maximum threshold.'
+  },
+  'insurance': {
+    section: 'Section 8.1(a)',
+    page: 20,
+    title: 'Insurance Requirements',
+    before: 'The Borrower shall maintain, or cause to be maintained, throughout the term of the Loan, the following insurance coverages:',
+    highlight: 'Property insurance covering the full replacement cost of all Improvements, with coverage against loss or damage by fire, lightning, windstorm, and such other risks as are customarily covered by an \u201call-risk\u201d or \u201cspecial form\u201d policy. The annual premium for such coverage shall not exceed one hundred fifteen percent (115%) of the budgeted amount without prior written notice to the Lender. Any increase in excess of such threshold shall require the Borrower to fund the resulting escrow shortfall within sixty (60) days.',
+    after: 'All insurance policies shall name the Lender as mortgagee, loss payee, and additional insured, as applicable, and shall provide for at least thirty (30) days\u2019 prior written notice to the Lender of cancellation, non-renewal, or material modification.'
+  }
+};
+
+let currentPdfPage = 1;
+let currentCovenantKey = null;
+
+function openPdfPanel(covenantKey) {
+  const data = COVENANT_PAGES[covenantKey];
+  if (!data) return;
+  currentCovenantKey = covenantKey;
+  currentPdfPage = data.page;
+  document.querySelector('.pdf-panel .pdf-page-num').textContent = 'Page ' + data.page + ' of 32';
+  document.getElementById('pdfSectionPill').textContent = data.section;
+  document.getElementById('pdfNavCurrent').textContent = 'Page ' + data.page + ' of 32';
+  const pageEl = document.getElementById('pdfPageContent');
+  pageEl.innerHTML = '<div class="pdf-page-title">' + data.title + '</div>' +
+    '<div class="pdf-page-body"><p>' + data.before + ' <span class="pdf-highlight">' + data.highlight + '</span></p>' +
+    '<p>' + data.after + '</p></div>';
+  document.getElementById('pdfOverlay').classList.add('open');
+  document.getElementById('pdfPanel').classList.add('open');
+}
+
+function closePdfPanel() {
+  document.getElementById('pdfOverlay').classList.remove('open');
+  document.getElementById('pdfPanel').classList.remove('open');
+  currentCovenantKey = null;
+}
+
+function pdfPagePrev() {
+  if (currentPdfPage > 1) {
+    currentPdfPage--;
+    document.querySelector('.pdf-panel .pdf-page-num').textContent = 'Page ' + currentPdfPage + ' of 32';
+    document.getElementById('pdfNavCurrent').textContent = 'Page ' + currentPdfPage + ' of 32';
+  }
+}
+
+function pdfPageNext() {
+  if (currentPdfPage < 32) {
+    currentPdfPage++;
+    document.querySelector('.pdf-panel .pdf-page-num').textContent = 'Page ' + currentPdfPage + ' of 32';
+    document.getElementById('pdfNavCurrent').textContent = 'Page ' + currentPdfPage + ' of 32';
+  }
+}
+
+document.getElementById('pdfOverlay').addEventListener('click', closePdfPanel);
+
+// Wire up click events on alert-card and warn-card elements
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.alert-card-actions')) return;
+  const card = e.target.closest('.alert-card[data-covenant], .warn-card[data-covenant]');
+  if (card) {
+    openPdfPanel(card.dataset.covenant);
+  }
 });
 
 // ===== DATA & TABLE =====
@@ -735,7 +777,7 @@ function renderTable(filter) {
   sorted.forEach(d => {
     const catLabel = { m: 'Metric', e: 'Event', t: 'Trigger' }[d.cat];
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td><span class="status-dot ${d.status}"></span></td><td><span class="cat-pill ${d.cat}">${catLabel}</span></td><td>${d.name}</td><td class="val-cell">${d.val}</td><td class="thr-cell">${d.thr}</td><td class="ref-cell">${d.ref}</td><td class="date-cell">${d.date}</td><td class="note-cell">${d.note}</td>`;
+    tr.innerHTML = '<td><span class="status-dot ' + d.status + '"></span></td><td><span class="cat-pill ' + d.cat + '">' + catLabel + '</span></td><td>' + d.name + '</td><td class="val-cell">' + d.val + '</td><td class="thr-cell">' + d.thr + '</td><td class="ref-cell">' + d.ref + '</td><td class="date-cell">' + d.date + '</td><td class="note-cell">' + d.note + '</td>';
     tbody.appendChild(tr);
   });
 }
@@ -761,7 +803,7 @@ function initCharts() {
   new Chart(document.getElementById('dscrChart'), {
     type: 'line',
     data: {
-      labels: ['Q2 \'26', 'Q3 \'26', 'Q4 \'26', 'Q1 \'27'],
+      labels: ["Q2 '26", "Q3 '26", "Q4 '26", "Q1 '27"],
       datasets: [
         { label: 'DSCR', data: [1.35, 1.31, 1.24, 1.22], borderColor: '#534AB7', backgroundColor: 'rgba(83,74,183,0.08)', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#534AB7', borderWidth: 2 },
         { label: 'Covenant (1.25x)', data: [1.25, 1.25, 1.25, 1.25], borderColor: '#F09595', borderDash: [6, 3], borderWidth: 1.5, pointRadius: 0, fill: false },
@@ -781,7 +823,7 @@ function initCharts() {
   new Chart(document.getElementById('occChart'), {
     type: 'bar',
     data: {
-      labels: ['Q2 \'26', 'Q3 \'26', 'Q4 \'26', 'Q1 \'27'],
+      labels: ["Q2 '26", "Q3 '26", "Q4 '26", "Q1 '27"],
       datasets: [
         { label: 'Occupancy', data: [91.2, 91.2, 84.1, 78.4], backgroundColor: d => d.raw < 80 ? '#F09595' : d.raw < 85 ? '#FAC775' : '#9FE1CB', borderRadius: 4, barPercentage: 0.6 },
       ]
